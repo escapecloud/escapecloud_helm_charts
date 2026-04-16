@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "escapecloud.apiName" . }}
+  labels:
+    {{- include "escapecloud.labels" . | nindent 4 }}
+    app.kubernetes.io/component: escape-api
+spec:
+  replicas: {{ .Values.escapeEngine.api.replicas }}
+  selector:
+    matchLabels:
+      {{- include "escapecloud.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: escape-api
+  template:
+    metadata:
+      labels:
+        {{- include "escapecloud.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: escape-api
+        {{- with .Values.global.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.global.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: escape-api
+          image: "{{ .Values.escapeEngine.image.repository }}:{{ .Values.escapeEngine.image.tag }}"
+          imagePullPolicy: {{ .Values.escapeEngine.image.pullPolicy }}
+          {{- with .Values.global.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          workingDir: /usr/src/app/api
+          command:
+            - uvicorn
+            - main:app
+            - --host
+            - 0.0.0.0
+            - --port
+            - {{ .Values.escapeEngine.api.service.port | quote }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "escapecloud.engineConfigMapName" . }}
+            - secretRef:
+                name: {{ include "escapecloud.engineSecretName" . }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.escapeEngine.api.service.port }}
+              protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+                - python
+                - -c
+                - import json,sys,urllib.request; data=json.load(urllib.request.urlopen('http://127.0.0.1:8000/healthz')); sys.exit(0 if data.get('status') == 'ok' else 1)
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command:
+                - python
+                - -c
+                - import json,sys,urllib.request; data=json.load(urllib.request.urlopen('http://127.0.0.1:8000/healthz')); sys.exit(0 if data.get('status') == 'ok' else 1)
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          {{- with .Values.escapeEngine.api.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

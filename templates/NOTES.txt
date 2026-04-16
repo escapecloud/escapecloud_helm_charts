@@ -1,0 +1,8 @@
+EscapeCloud chart rendered resources:
+
+- Public web host: {{ default .Values.global.hostName .Values.escapeWeb.env.HOST_NAME }}
+- Public web service: {{ include "escapecloud.webappName" . }}
+- Internal API service: {{ include "escapecloud.apiName" . }}
+
+The chart expects customer-managed PostgreSQL and RabbitMQ endpoints.
+Provide those connection values through `values.yaml` before installing.

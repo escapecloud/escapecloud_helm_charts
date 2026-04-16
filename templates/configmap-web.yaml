@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "escapecloud.webConfigMapName" . }}
+  labels:
+    {{- include "escapecloud.labels" . | nindent 4 }}
+    app.kubernetes.io/component: escape-web
+data:
+  HOST_NAME: {{ default .Values.global.hostName .Values.escapeWeb.env.HOST_NAME | quote }}
+  ADDITIONAL_ALLOWED_HOSTS: {{ default (printf "%s,%s.%s,%s.%s.svc.cluster.local" (include "escapecloud.webappName" .) (include "escapecloud.webappName" .) .Release.Namespace (include "escapecloud.webappName" .) .Release.Namespace) .Values.escapeWeb.env.ADDITIONAL_ALLOWED_HOSTS | quote }}
+  ASSESSMENT_ENGINE_API_URL: {{ default (printf "http://%s.%s.svc.cluster.local:%v" (include "escapecloud.apiName" .) .Release.Namespace .Values.escapeEngine.api.service.port) .Values.escapeWeb.env.ASSESSMENT_ENGINE_API_URL | quote }}
+  {{- range $key, $value := omit .Values.escapeWeb.env "HOST_NAME" "ADDITIONAL_ALLOWED_HOSTS" "ASSESSMENT_ENGINE_API_URL" }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}

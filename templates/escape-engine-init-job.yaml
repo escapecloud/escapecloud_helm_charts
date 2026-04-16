@@ -1,0 +1,60 @@
+{{- if .Values.escapeEngine.dbInit.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ printf "%s-engine-init" (include "escapecloud.fullname" .) | trunc 63 | trimSuffix "-" }}
+  labels:
+    {{- include "escapecloud.labels" . | nindent 4 }}
+    app.kubernetes.io/component: escape-engine-init
+spec:
+  backoffLimit: {{ .Values.escapeEngine.dbInit.backoffLimit }}
+  ttlSecondsAfterFinished: {{ .Values.escapeEngine.dbInit.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "escapecloud.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: escape-engine-init
+    spec:
+      restartPolicy: Never
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: escape-engine-init
+          image: "{{ .Values.escapeEngine.image.repository }}:{{ .Values.escapeEngine.image.tag }}"
+          imagePullPolicy: {{ .Values.escapeEngine.image.pullPolicy }}
+          {{- with .Values.global.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          workingDir: /usr/src/app/db
+          command:
+            - python
+            - update.py
+          envFrom:
+            - configMapRef:
+                name: {{ include "escapecloud.engineConfigMapName" . }}
+            - secretRef:
+                name: {{ include "escapecloud.engineSecretName" . }}
+          {{- with .Values.escapeEngine.dbInit.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

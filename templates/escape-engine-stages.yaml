@@ -1,0 +1,79 @@
+{{- $stages := list
+  (dict "name" "stage1" "workingDir" "/usr/src/app/engine/engine_stage1" "command" (list "celery" "-A" "tasks_stage1.celery_app" "worker" "--loglevel=info" "-Q" "stage0" "-E" "--pool=solo" "--concurrency=1"))
+  (dict "name" "stage2" "workingDir" "/usr/src/app/engine/engine_stage2" "command" (list "celery" "-A" "tasks_stage2.celery_app" "worker" "--loglevel=info" "-Q" "stage1" "-E" "--pool=solo" "--concurrency=1"))
+  (dict "name" "stage3" "workingDir" "/usr/src/app/engine/engine_stage3" "command" (list "celery" "-A" "tasks_stage3.celery_app" "worker" "--loglevel=info" "-Q" "stage2" "-E" "--pool=solo" "--concurrency=1"))
+  (dict "name" "stage4" "workingDir" "/usr/src/app/engine/engine_stage4" "command" (list "celery" "-A" "tasks_stage4.celery_app" "worker" "--loglevel=info" "-Q" "stage3" "-E" "--pool=solo" "--concurrency=1"))
+  (dict "name" "stage5" "workingDir" "/usr/src/app/engine/engine_stage5" "command" (list "celery" "-A" "tasks_stage5.celery_app" "worker" "--loglevel=info" "-Q" "stage4" "-E" "--pool=solo" "--concurrency=1"))
+  (dict "name" "stage6" "workingDir" "/usr/src/app/engine/engine_stage6" "command" (list "celery" "-A" "tasks_stage6.celery_app" "worker" "--loglevel=info" "-Q" "stage5" "-E" "--pool=solo" "--concurrency=1"))
+  (dict "name" "stage7" "workingDir" "/usr/src/app/engine/engine_stage7" "command" (list "celery" "-A" "tasks_stage7.celery_app" "worker" "--loglevel=info" "-Q" "stage6" "-E" "--pool=solo" "--concurrency=1"))
+  (dict "name" "stage8" "workingDir" "/usr/src/app/engine/engine_stage8" "command" (list "celery" "-A" "tasks_stage8.celery_app" "worker" "--loglevel=info" "-Q" "stage7" "-E" "--pool=solo" "--concurrency=1"))
+  (dict "name" "stage9" "workingDir" "/usr/src/app/engine/engine_stage9" "command" (list "celery" "-A" "tasks_stage9.celery_app" "worker" "--loglevel=info" "-Q" "stage8,error" "-E" "--pool=solo" "--concurrency=1"))
+}}
+{{- range $stage := $stages }}
+{{- $stageValues := index $.Values.escapeEngine.stages $stage.name }}
+{{- if $stageValues.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ printf "%s-%s" (include "escapecloud.fullname" $) $stage.name | trunc 63 | trimSuffix "-" }}
+  labels:
+    {{- include "escapecloud.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ printf "escape-engine-%s" $stage.name }}
+spec:
+  replicas: {{ $stageValues.replicas }}
+  selector:
+    matchLabels:
+      {{- include "escapecloud.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: {{ printf "escape-engine-%s" $stage.name }}
+  template:
+    metadata:
+      labels:
+        {{- include "escapecloud.selectorLabels" $ | nindent 8 }}
+        app.kubernetes.io/component: {{ printf "escape-engine-%s" $stage.name }}
+        {{- with $.Values.global.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with $.Values.global.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with $.Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.global.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ printf "escape-engine-%s" $stage.name }}
+          image: "{{ $.Values.escapeEngine.image.repository }}:{{ $.Values.escapeEngine.image.tag }}"
+          imagePullPolicy: {{ $.Values.escapeEngine.image.pullPolicy }}
+          {{- with $.Values.global.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          workingDir: {{ $stage.workingDir }}
+          command:
+            {{- toYaml $stage.command | nindent 12 }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "escapecloud.engineConfigMapName" $ }}
+            - secretRef:
+                name: {{ include "escapecloud.engineSecretName" $ }}
+      {{- with $.Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.global.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.global.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+{{- end }}
+{{- end }}

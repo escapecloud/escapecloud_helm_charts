@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "escapecloud.apiName" . }}
+  labels:
+    {{- include "escapecloud.labels" . | nindent 4 }}
+    app.kubernetes.io/component: escape-api
+spec:
+  type: {{ .Values.escapeEngine.api.service.type }}
+  selector:
+    {{- include "escapecloud.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: escape-api
+  ports:
+    - name: http
+      port: {{ .Values.escapeEngine.api.service.port }}
+      targetPort: http
+      protocol: TCP

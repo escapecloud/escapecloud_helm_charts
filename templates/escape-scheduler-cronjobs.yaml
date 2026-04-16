@@ -1,0 +1,68 @@
+{{- if .Values.escapeWeb.scheduler.enabled }}
+{{- range $job := .Values.escapeWeb.scheduler.jobs }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ printf "%s-%s" (include "escapecloud.fullname" $) $job.name | trunc 52 | trimSuffix "-" }}
+  labels:
+    {{- include "escapecloud.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: escape-scheduler
+spec:
+  schedule: {{ $job.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: {{ $.Values.escapeWeb.scheduler.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ $.Values.escapeWeb.scheduler.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "escapecloud.selectorLabels" $ | nindent 12 }}
+            app.kubernetes.io/component: escape-scheduler
+            {{- with $.Values.global.podLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with $.Values.global.podAnnotations }}
+          annotations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        spec:
+          restartPolicy: Never
+          {{- with $.Values.global.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $.Values.global.podSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          containers:
+            - name: {{ $job.name }}
+              image: "{{ $.Values.escapeWeb.image.repository }}:{{ $.Values.escapeWeb.image.tag }}"
+              imagePullPolicy: {{ $.Values.escapeWeb.image.pullPolicy }}
+              {{- with $.Values.global.securityContext }}
+              securityContext:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
+              command:
+                {{- toYaml $job.command | nindent 16 }}
+              envFrom:
+                - configMapRef:
+                    name: {{ include "escapecloud.webConfigMapName" $ }}
+                - secretRef:
+                    name: {{ include "escapecloud.webSecretName" $ }}
+          {{- with $.Values.global.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $.Values.global.affinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $.Values.global.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+---
+{{- end }}
+{{- end }}

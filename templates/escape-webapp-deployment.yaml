@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "escapecloud.webappName" . }}
+  labels:
+    {{- include "escapecloud.labels" . | nindent 4 }}
+    app.kubernetes.io/component: escape-webapp
+spec:
+  replicas: {{ .Values.escapeWeb.webapp.replicas }}
+  selector:
+    matchLabels:
+      {{- include "escapecloud.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: escape-webapp
+  template:
+    metadata:
+      labels:
+        {{- include "escapecloud.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: escape-webapp
+        {{- with .Values.global.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.global.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: escape-webapp
+          image: "{{ .Values.escapeWeb.image.repository }}:{{ .Values.escapeWeb.image.tag }}"
+          imagePullPolicy: {{ .Values.escapeWeb.image.pullPolicy }}
+          {{- with .Values.global.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "escapecloud.webConfigMapName" . }}
+            - secretRef:
+                name: {{ include "escapecloud.webSecretName" . }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.escapeWeb.webapp.service.port }}
+              protocol: TCP
+          startupProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - curl -fsS http://localhost/api/healthz || curl -fsS http://localhost:8000/api/healthz
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - curl -fsS http://localhost/api/readyz || curl -fsS http://localhost:8000/api/readyz
+            initialDelaySeconds: 5
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - curl -fsS http://localhost/api/healthz || curl -fsS http://localhost:8000/api/healthz
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          {{- with .Values.escapeWeb.webapp.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

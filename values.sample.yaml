@@ -1,0 +1,130 @@
+nameOverride: ""
+fullnameOverride: "escape"
+
+global:
+  hostName: domain.tld
+  imagePullSecrets:
+    - name: onstackit-registry
+  podAnnotations: {}
+  podLabels: {}
+  podSecurityContext: {}
+  securityContext: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+escapeWeb:
+  image:
+    repository: registry.onstackit.cloud/escapecloud/app_web
+    tag: 0.1.0
+    pullPolicy: IfNotPresent
+  webapp:
+    replicas: 1
+    service:
+      type: ClusterIP
+      port: 80
+    resources: {}
+  masterdataInit:
+    enabled: true
+    backoffLimit: 3
+    ttlSecondsAfterFinished: 300
+    resources: {}
+  env:
+    WEB_ENV: ""
+    WEB_SENTRY_DSN: ""
+    HOST_NAME: ""
+    WEB_DB_HOST: ""
+    WEB_DB_PORT: "5432"
+    WEB_DB_DATABASE: ""
+    WEB_DB_USERNAME: ""
+    WEB_EMAIL_HOST: ""
+    WEB_EMAIL_PORT: ""
+    WEB_EMAIL_USE_TLS: "true"
+    WEB_EMAIL_HOST_USER: ""
+    WEB_DEFAULT_FROM_EMAIL: ""
+  secretEnv:
+    SECRET_KEY: ""
+    WEB_DB_PASSWORD: ""
+    WEB_EMAIL_HOST_PASSWORD: ""
+  scheduler:
+    enabled: true
+    successfulJobsHistoryLimit: 3
+    failedJobsHistoryLimit: 1
+    jobs:
+      - name: schedule-sync
+        schedule: "*/3 * * * *"
+        command:
+          - python
+          - manage.py
+          - schedule_sync
+      - name: schedule-assessments
+        schedule: "*/5 * * * *"
+        command:
+          - python
+          - manage.py
+          - schedule_assessments
+      - name: update-masterdata
+        schedule: "0 6 * * 1"
+        command:
+          - python
+          - manage.py
+          - update_masterdata
+
+escapeEngine:
+  image:
+    repository: registry.onstackit.cloud/escapecloud/app_engine
+    tag: 0.1.0
+    pullPolicy: IfNotPresent
+  api:
+    replicas: 1
+    service:
+      type: ClusterIP
+      port: 8000
+    resources: {}
+  dbInit:
+    enabled: true
+    backoffLimit: 3
+    ttlSecondsAfterFinished: 300
+    resources: {}
+  env:
+    ENGINE_ENV: ""
+    ENGINE_SENTRY_DSN: ""
+    ENGINE_DB_HOST: ""
+    ENGINE_DB_PORT: "5432"
+    ENGINE_DB_DATABASE: ""
+    ENGINE_DB_USERNAME: ""
+    RABBITMQ_HOST: ""
+    RABBITMQ_USER: ""
+    MASTER_CLIENT_ID: ""
+  secretEnv:
+    ENGINE_DB_PASSWORD: ""
+    RABBITMQ_PASSWORD: ""
+    MASTER_CLIENT_SECRET: ""
+  stages:
+    stage1:
+      enabled: true
+      replicas: 1
+    stage2:
+      enabled: true
+      replicas: 1
+    stage3:
+      enabled: true
+      replicas: 1
+    stage4:
+      enabled: true
+      replicas: 1
+    stage5:
+      enabled: true
+      replicas: 1
+    stage6:
+      enabled: true
+      replicas: 1
+    stage7:
+      enabled: true
+      replicas: 1
+    stage8:
+      enabled: true
+      replicas: 1
+    stage9:
+      enabled: true
+      replicas: 1
