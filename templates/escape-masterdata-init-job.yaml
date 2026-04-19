@@ -41,11 +41,11 @@ spec:
                 sleep 3
               done
 
-              until curl -fsS "$ASSESSMENT_ENGINE_API_URL/readyz"; do
+              until python -c "import urllib.request; urllib.request.urlopen('$ASSESSMENT_ENGINE_API_URL/readyz')"; do
                 sleep 5
               done
 
-              until curl -fsS "$ASSESSMENT_ENGINE_API_URL/data/readyz"; do
+              until python -c "import urllib.request; urllib.request.urlopen('$ASSESSMENT_ENGINE_API_URL/data/readyz')"; do
                 sleep 5
               done
 

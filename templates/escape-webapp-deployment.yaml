@@ -54,7 +54,7 @@ spec:
               command:
                 - sh
                 - -c
-                - curl -fsS http://localhost/api/healthz || curl -fsS http://localhost:8000/api/healthz
+                - python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/api/healthz')"
             initialDelaySeconds: 10
             periodSeconds: 5
             timeoutSeconds: 5
@@ -64,7 +64,7 @@ spec:
               command:
                 - sh
                 - -c
-                - curl -fsS http://localhost/api/readyz || curl -fsS http://localhost:8000/api/readyz
+                - python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/api/readyz')"
             initialDelaySeconds: 5
             periodSeconds: 15
             timeoutSeconds: 5
@@ -74,7 +74,7 @@ spec:
               command:
                 - sh
                 - -c
-                - curl -fsS http://localhost/api/healthz || curl -fsS http://localhost:8000/api/healthz
+                - python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/api/healthz')"
             initialDelaySeconds: 30
             periodSeconds: 30
             timeoutSeconds: 5

@@ -6,7 +6,7 @@ metadata:
     {{- include "escapecloud.labels" . | nindent 4 }}
     app.kubernetes.io/component: escape-engine
 data:
-  WEBHOOK_URL: {{ default (printf "http://%s.%s.svc.cluster.local/api/assessmentOrderWebhook" (include "escapecloud.webappName" .) .Release.Namespace) .Values.escapeEngine.env.WEBHOOK_URL | quote }}
+  WEBHOOK_URL: {{ default (printf "http://%s.%s.svc.cluster.local:%s/api/assessmentOrderWebhook" (include "escapecloud.webappName" .) .Release.Namespace (toString .Values.escapeWeb.webapp.service.port)) .Values.escapeEngine.env.WEBHOOK_URL | quote }}
   {{- range $key, $value := .Values.escapeEngine.env }}
   {{- if ne $key "WEBHOOK_URL" }}
   {{ $key }}: {{ $value | quote }}

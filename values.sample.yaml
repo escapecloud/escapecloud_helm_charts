@@ -22,7 +22,7 @@ escapeWeb:
     replicas: 1
     service:
       type: ClusterIP
-      port: 80
+      port: 8080
     resources: {}
   masterdataInit:
     enabled: true
@@ -33,6 +33,7 @@ escapeWeb:
     WEB_ENV: ""
     WEB_SENTRY_DSN: ""
     HOST_NAME: ""
+    TRUST_PROXY_SSL: ""
     WEB_DB_HOST: ""
     WEB_DB_PORT: "5432"
     WEB_DB_DATABASE: ""
