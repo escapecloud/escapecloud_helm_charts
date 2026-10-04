@@ -86,6 +86,8 @@ Important values:
   Web image repository
 - `escapeWeb.image.tag`
   Web image tag to deploy
+- `escapeWeb.env.ADMINISTRATORS`
+  Email address(es) of the application administrators, for example `admin@domain.tld`
 - `escapeWeb.env.WEB_DB_*`
   Web database connection settings
 - `escapeWeb.secretEnv.*`

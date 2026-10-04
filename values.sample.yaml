@@ -33,6 +33,7 @@ escapeWeb:
     WEB_ENV: ""
     WEB_SENTRY_DSN: ""
     HOST_NAME: ""
+    ADMINISTRATORS: ""
     TRUST_PROXY_SSL: ""
     WEB_DB_HOST: ""
     WEB_DB_PORT: "5432"
